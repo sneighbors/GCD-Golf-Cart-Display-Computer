@@ -37,6 +37,7 @@ volatile bool bleClientConnected = false;
 
 static NimBLEServer*         s_server  = nullptr;
 static NimBLECharacteristic* s_txChar  = nullptr;
+static char                  s_bleName[12];  // "GCD-XXYYZZ\0"
 
 // Flag set by RX callback to trigger chat history sync from ble_task loop
 // (avoids sending 32 large frames from inside the NimBLE callback context).
@@ -300,7 +301,7 @@ static void bleSendHello() {
     static char buf[128];
     snprintf(buf, sizeof(buf),
         "{\"type\":\"HELLO\",\"fw\":\"%s\",\"mac\":\"%s\",\"name\":\"%s\"}",
-        gcd_version.c_str(), cyd_mac_addr.c_str(), BLE_DEVICE_NAME
+        gcd_version.c_str(), cyd_mac_addr.c_str(), s_bleName
     );
     blePush(BLE_MSG_HELLO, buf);
 }
@@ -620,7 +621,13 @@ class GCDRxCallbacks : public NimBLECharacteristicCallbacks {
 // ── BLE initialisation ──────────────────────────────────────────────────────
 
 static void bleInit() {
-    NimBLEDevice::init(BLE_DEVICE_NAME);
+    // Build unique device name from last 3 bytes of BT MAC: "GCD-XXYYZZ"
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_BT);
+    snprintf(s_bleName, sizeof(s_bleName), "%s%02X%02X%02X",
+             BLE_DEVICE_NAME_PREFIX, mac[3], mac[4], mac[5]);
+
+    NimBLEDevice::init(s_bleName);
     NimBLEDevice::setMTU(512);
 
     s_server = NimBLEDevice::createServer();
@@ -640,7 +647,7 @@ static void bleInit() {
     pAdv->addServiceUUID(GCD_BLE_SVC_UUID);
     pAdv->start();
 
-    Serial.printf("[BLE] Advertising as \"%s\"\n", BLE_DEVICE_NAME);
+    Serial.printf("[BLE] Advertising as \"%s\"\n", s_bleName);
 }
 
 // ── Task entry point ─────────────────────────────────────────────────────────
