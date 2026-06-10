@@ -1,7 +1,6 @@
 #include "get_set_vars.h"
 #include <Arduino.h>
 #include "storage/preferences_manager.h"
-#include "hardware/display.h"
 #include "communication/espnow_handler.h"
 #include "communication/chat_buffer.h"
 #include "globals.h"
@@ -499,9 +498,6 @@ void set_var_flip_screen(bool value) {
         Serial.println(value ? "true" : "false");
 
         flip_screen = value;
-
-        // Update display rotation immediately
-        updateDisplayRotation();
 
         // Queue the preference write to save to EEPROM
         queuePreferenceWrite("flip_screen", value);

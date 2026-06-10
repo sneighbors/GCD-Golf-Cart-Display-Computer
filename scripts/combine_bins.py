@@ -31,6 +31,8 @@ import sys
 try:
     # Use the esptool from the package directory
     esp_tool_path = env.PioPlatform().get_package_dir("tool-esptoolpy")
+    contrib_dir = os.path.join(esp_tool_path, "_contrib")
+    sys.path.insert(0, contrib_dir)
     sys.path.append(esp_tool_path)
     import esptool
     print(f"esptool found at: {esptool.__file__}")

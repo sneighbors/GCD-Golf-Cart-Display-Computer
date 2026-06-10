@@ -10,12 +10,6 @@
 void meshtasticTask(void *parameter) {
     static bool old_reboot_meshtastic = false;
 
-    // Block until gui_task completes its first render. On button reset the GCM
-    // has pending serial data and mt_loop() allocates immediately, fragmenting
-    // the heap before LVGL can claim the glyph_guard block for the 24 KB
-    // splash-screen draw buffer. 5-second timeout is a safety fallback.
-    if (firstRenderDone) xSemaphoreTake(firstRenderDone, pdMS_TO_TICKS(5000));
-
     while (true) {
         uint32_t now = millis();
 

@@ -14,9 +14,6 @@ bool ESPNowHandler::init() {
         return true;
     }
 
-    // espnow_task waits on firstRenderDone semaphore before calling this function,
-    // so esp_wifi_start() (which spawns the IDF WiFi task at priority 23 on core 0)
-    // cannot run until after LVGL's first lv_timer_handler() completes.
     // If WiFi was not pre-initialized in setup(), do the full init here.
     // Never call WiFi.mode(): it uses default buffer counts which OOM on this device.
     wifi_mode_t _wm;
@@ -448,10 +445,6 @@ void ESPNowHandler::processReceivedMessage(espnow_recv_item_t &item) {
             // Map lux and headlight state into EEZ-accessible variables
             set_var_lux_now((int32_t)outdoorLux);
             headlights_on = (modeHeadLights == 1);
-            // Sync screen brightness immediately when lux is driving headlights
-            if (lux_now >= 0 && !backlight_dimmed) {
-                setBacklight(headlights_on ? (night_backlight * 20) : ((day_backlight * 20) + 55));
-            }
 
             // Always show telemetry (confirms GCI communication is working)
             Serial.printf("Telemetry: Lights=%d Lux=%d Temp=%.1f Batt=%.2f Fuel=%.1f\n",

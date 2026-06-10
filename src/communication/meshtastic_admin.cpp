@@ -7,7 +7,6 @@
 #include "pb_encode.h"
 #include "pb_decode.h"
 #include "globals.h"
-#include "ui/canned_screen.h"
 #include "storage/favorites.h"
 
 // External declarations from mt_protocol.cpp in meshtastic library
@@ -102,7 +101,8 @@ const char* nodeNameCacheLookup(uint32_t nodeNum) {
 // Called from handle_channel_tag() in mt_protocol.cpp for each channel received
 // from the GCM (both during the boot config dump and in response to get_channel_request)
 void handleChannelResponse(meshtastic_Channel *channel) {
-    cannedScreenOnChannelResponse(channel);
+    // Channel data available via getChannelName() for BLE settings push
+    (void)channel;
 }
 
 bool mt_send_admin_reboot(int32_t seconds) {
@@ -251,8 +251,6 @@ void handleGcmRebooted() {
     wakeNotificationSent = false;
     reqWxEntSent = false;
 
-    // Clear stale channel names so the canned screen shows "Ch N" until re-fetch completes
-    cannedScreenResetChannelNames();
 }
 
 void initGpsConfigOnBoot() {

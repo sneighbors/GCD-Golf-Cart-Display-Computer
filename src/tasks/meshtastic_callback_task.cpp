@@ -4,8 +4,8 @@
 #include "types.h"
 #include "communication/hot_packet_parser.h"
 #include "communication/chat_buffer.h"
-#include "ui/chat_screen.h"
 #include "hardware/display.h"
+#include "tasks/ble_task.h"
 #include "Meshtastic.h"
 #include <time.h>
 
@@ -39,15 +39,17 @@ void meshtasticCallbackTask(void *parameter) {
             strncpy(cm.text, item.text, sizeof(cm.text) - 1);
             cm.text[sizeof(cm.text) - 1] = '\0';
             chatBufferAppend(&cm);
+            blePushChat(&cm);
 
             if (item.to == my_node_num && my_node_num != 0) {
                 tone_message();
+                blePushAlert(BLE_ALERT_NEW_DM, "");
                 eepromWriteItem_t nvsItem = {};
                 nvsItem.type = EEPROM_SAVE_DMS;
                 xQueueSend(eepromWriteQueue, &nvsItem, 0);
+            } else {
+                blePushAlert(BLE_ALERT_NEW_BROADCAST, "");
             }
-
-            chatScreenRequestRefresh();
 
             // Hot packet structured-data parser still gets the full original text.
             if (isHotPacket(item.text)) {

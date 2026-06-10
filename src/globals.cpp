@@ -3,26 +3,24 @@
 
 // FreeRTOS handles
 TaskHandle_t gpsTaskHandle = NULL;
-TaskHandle_t guiTaskHandle = NULL;
 TaskHandle_t meshtasticTaskHandle = NULL;
 TaskHandle_t meshtasticCallbackTaskHandle = NULL;
 TaskHandle_t eepromTaskHandle = NULL;
 TaskHandle_t systemTaskHandle = NULL;
 TaskHandle_t espnowTaskHandle = NULL;
+TaskHandle_t bleTaskHandle = NULL;
 
 // Synchronization objects
 SemaphoreHandle_t gpsMutex;
 SemaphoreHandle_t eepromMutex;
-SemaphoreHandle_t displayMutex;
 SemaphoreHandle_t hotPacketMutex;  // Protects hot packet buffer swapping (not data reads)
 SemaphoreHandle_t chatBufferMutex; // Guards the chat ring buffer
-SemaphoreHandle_t firstRenderDone = nullptr;
-SemaphoreHandle_t splashDone = nullptr;
 QueueHandle_t eepromWriteQueue;
 QueueHandle_t meshtasticCallbackQueue;
 QueueHandle_t espnowRecvQueue;
 QueueHandle_t gpsConfigCallbackQueue;
 QueueHandle_t chatTxQueue;
+QueueHandle_t bleNotifyQueue = nullptr;
 
 // Double buffering for hot packet data (eliminates blocking reads)
 volatile int hotPacketActiveBufferWx = 0;  // 0 or 1, weather fields only
@@ -47,26 +45,6 @@ char hotPacketBuffer_fcast_temp4[2][HP_FCAST_TEMP_SIZE];
 char hotPacketBuffer_fcast_precip4[2][HP_FCAST_PRECIP_SIZE];
 char hotPacketBuffer_np_rcv_time[2][HP_RCV_TIME_SIZE];
 char hotPacketBuffer_live_venue_event_data[2][HP_VENUE_DATA_SIZE];
-
-// Display objects
-SPIClass touchscreenSpi = SPIClass(VSPI);
-XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
-uint16_t touchScreenMinimumX = 200;
-uint16_t touchScreenMaximumX = 3700;
-uint16_t touchScreenMinimumY = 240;
-uint16_t touchScreenMaximumY = 3800;
-lv_indev_t *indev;
-uint8_t *draw_buf;
-uint32_t lastTick = 0;
-
-// Touchscreen calibration coefficients (default to 0, loaded from EEPROM if available)
-float touch_alpha_x = 0.0;
-float touch_beta_x = 0.0;
-float touch_delta_x = 0.0;
-float touch_alpha_y = 0.0;
-float touch_beta_y = 0.0;
-float touch_delta_y = 0.0;
-bool use_touch_calibration = false;  // Set to true when coefficients loaded from EEPROM
 
 // GPS objects
 HardwareSerial &gpsSerial = Serial;

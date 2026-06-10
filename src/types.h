@@ -123,6 +123,14 @@ typedef enum {
     // Add more commands as needed
 } gci_command_t;
 
+// BLE outbound notify queue item (pre-serialized frame ready for pTxChar->notify())
+#define BLE_PAYLOAD_MAX 256
+typedef struct {
+    uint8_t  msg_type;
+    uint16_t payload_len;
+    uint8_t  payload[BLE_PAYLOAD_MAX];
+} ble_notify_item_t;
+
 // Sleep/Operating mode state machine
 typedef enum {
     SLEEP_MODE_STARTUP_GRACE = 0,  // Initial grace period on startup

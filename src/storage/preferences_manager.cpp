@@ -66,14 +66,6 @@ void loadPreferences() {
 
     fuelSensorType = prefs.getInt("fuel_sense_type", FUEL_SENSOR_NONE);
 
-    // Load touchscreen calibration coefficients if available
-    touch_alpha_x = prefs.getFloat("touch_alpha_x", 0.0);
-    touch_beta_x = prefs.getFloat("touch_beta_x", 0.0);
-    touch_delta_x = prefs.getFloat("touch_delta_x", 0.0);
-    touch_alpha_y = prefs.getFloat("touch_alpha_y", 0.0);
-    touch_beta_y = prefs.getFloat("touch_beta_y", 0.0);
-    touch_delta_y = prefs.getFloat("touch_delta_y", 0.0);
-
     // Load stored entertainment (now playing) data for boot-time validation
     np_stored_date = prefs.getInt("np_date", 0);
     np_stored_data = prefs.getString("np_data", "");
@@ -83,9 +75,6 @@ void loadPreferences() {
     wx_stored_date = prefs.getInt("wx_date", 0);
     wx_stored_data = prefs.getString("wx_data", "");
     wx_stored_timestamp = prefs.getString("wx_time", "");
-
-    // Check if calibration coefficients are valid (not all zeros)
-    use_touch_calibration = (touch_alpha_x != 0.0 || touch_beta_x != 0.0 || touch_alpha_y != 0.0 || touch_beta_y != 0.0);
 
     // Load home location coordinates
     homeLatitude = prefs.getFloat("home_lat", 0.0);
@@ -111,7 +100,6 @@ void loadPreferences() {
     Serial.printf("  accum_distance=%.3f, trip_distance=%.3f\n", accum_distance, trip_distance);
     Serial.printf("  hrs_since_svc=%d (%.1f hrs), svc_interval_hrs=%d\n", hrs_since_svc, hrs_since_svc / 10.0, svc_interval_hrs);
     Serial.printf("  temperature_adj=%.1f\n", temperature_adj);
-    Serial.printf("  touch_calibration=%s\n", use_touch_calibration ? "loaded" : "default");
     if (homeLocationSet) {
         Serial.printf("  home: %.6f, %.6f (fence=%dm)\n", homeLatitude, homeLongitude, home_gps_fence_radius_m);
     } else {

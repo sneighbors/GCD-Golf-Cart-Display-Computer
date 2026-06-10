@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 // Debug Settings
-#define DEBUG_TOUCH_SCREEN 0
 #define DEBUG_GPS 0
 // MT_DEBUGGING - LEAVE UNDEFINED (not 0) to disable low-level Meshtastic protocol debugging
 // Upstream code uses #ifdef (not #if), so defining it to 0 still enables it!
@@ -30,39 +29,9 @@
 // Sleep pin (sleeps when LOW)
 #define SLEEP_PIN 35
 
-// Touch Screen pins
-#define XPT2046_IRQ 36
-#define XPT2046_MOSI 32
-#define XPT2046_MISO 39
-#define XPT2046_CLK 25
-#define XPT2046_CS 33
-
-// Touch rotation values
-#define TOUCH_ROTATION_0 0
-#define TOUCH_ROTATION_90 1
-#define TOUCH_ROTATION_180 2
-#define TOUCH_ROTATION_270 3
-
-// Display dimensions
-#define TOUCH_WIDTH 320
-#define TOUCH_HEIGHT 240
-#define TFT_WIDTH 240
-#define TFT_HEIGHT 320
-
-// Backlight configuration
-#define TFT_BACKLIGHT_PIN 21  //used internally to CYD PCB
-#define LEDC_CHANNEL_0 0
-#define LEDC_BASE_FREQ 5000
-#define LEDC_TIMER_12_BIT 12
-#define MAX_BACKLIGHT_VALUE 255
-
 // Speaker LEDC configuration
 #define SPEAKER_LEDC_CHANNEL 1
 #define SPEAKER_LEDC_TIMER_BIT 8
-
-// LVGL buffer configuration
-#define DRAW_BUF_SIZE (TFT_WIDTH * 30 * sizeof(lv_color_t))
-// This gives 240 * 30 * 2 = 14,400 bytes
 
 // Meshtastic configuration
 #define MT_SERIAL_TX_PIN 22
@@ -97,13 +66,6 @@
 // Headlight offset: turn on this many seconds before sunset / off after sunrise
 #define HEADLIGHT_SUNSET_OFFSET_SEC 600
 
-// UI update flag timing (milliseconds)
-#define NEW_RX_DATA_FLAG_RESET_TIME 5000  // Auto-reset flag after 5 seconds
-
-// Inactivity timeout configuration
-#define SCREEN_INACTIVITY_TIMEOUT_MS (1 * 60 * 1000)  // 1 minutes
-//#define SCREEN_INACTIVITY_TIMEOUT_MS (10 * 1000)  // 10 secs for debugging
-
 // Sleep configuration
 #define SLEEP_CHECK_INTERVAL_MS 100  // How often system task checks SLEEP_PIN (ms)
 
@@ -133,18 +95,23 @@
 // Saves ~7.5 KB of BSS (two 32-slot arrays) + ~2 KB of queue heap vs using 237.
 #define CHAT_TEXT_SIZE 120        // Max text stored per chat message / TX / KB context
 
+// BLE configuration
+#define DEBUG_BLE 0                         // 1 = verbose BLE logging
+#define BLE_DEVICE_NAME_PREFIX "GCD-"       // Runtime name is "GCD-XXYYZZ" (last 3 MAC bytes); never use this alone as the full name
+#define BLE_NOTIFY_QUEUE_SIZE 20            // Max queued outbound notifications
+
 // Heap monitoring (set DEBUG_HEAP to 0 to remove all logging once stable)
 #define DEBUG_HEAP 0
 #define DEBUG_HEAP_INTERVAL_MS 5000
 
 // Task Stack Sizes (in bytes)
 #define GPS_TASK_STACK_SIZE 4096
-#define GUI_TASK_STACK_SIZE 8192
 #define MESHTASTIC_TASK_STACK_SIZE 4096
 #define MESHTASTIC_CALLBACK_TASK_STACK_SIZE 6144
 #define EEPROM_TASK_STACK_SIZE 4096  // saveDmsToNvs() needs ~1.2KB beyond base overhead
 #define SYSTEM_TASK_STACK_SIZE 4096  // Increased for GPS config init with debug output
 #define ESPNOW_TASK_STACK_SIZE 4096
+#define BLE_TASK_STACK_SIZE 6144
 
 // Fuel / energy sensor type codes (must match EEZ Studio fuel_sense_type enum)
 #define FUEL_SENSOR_NONE        0   // no sensor installed
@@ -153,11 +120,11 @@
 #define FUEL_SENSOR_ADC_ELEC    3   // analog voltage (electric/battery, future)
 
 // Task Priorities
-#define GUI_TASK_PRIORITY 3
 #define GPS_TASK_PRIORITY 2
 #define MESHTASTIC_TASK_PRIORITY 2
 #define MESHTASTIC_CALLBACK_TASK_PRIORITY 2
 #define ESPNOW_TASK_PRIORITY 2
+#define BLE_TASK_PRIORITY 2
 #define EEPROM_TASK_PRIORITY 1
 #define SYSTEM_TASK_PRIORITY 1
 

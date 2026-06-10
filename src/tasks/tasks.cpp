@@ -3,9 +3,6 @@
 #include "globals.h"
 
 void createAllTasks() {
-    // Core 1 tasks first. GPS/EEPROM/system block on queues/serial immediately;
-    // meshtastic_task waits on firstRenderDone (signaled after home screen loads)
-    // to avoid fragmenting heap with pending GCM data during the splash animation.
     xTaskCreatePinnedToCore(
         gpsTask,
         "GPS Task",
@@ -56,8 +53,7 @@ void createAllTasks() {
         1
     );
 
-    // Core 0: espnow_task blocks on splashDone semaphore (given when home screen loads,
-    // ~3-4s) so WiFi init cannot fragment heap during the 172px splash animation.
+    // Core 0: espnow_task and ble_task share radio hardware with WiFi.
     xTaskCreatePinnedToCore(
         espnowTask,
         "ESP-NOW Task",
@@ -68,19 +64,16 @@ void createAllTasks() {
         0  // Core 0 for WiFi operations
     );
 
-    // gui_task is created last so all task stacks are already allocated when
-    // the first lv_timer_handler() call runs — eliminates concurrent heap
-    // contention from task creation during the first LVGL render.
     xTaskCreatePinnedToCore(
-        guiTask,
-        "GUI Task",
-        GUI_TASK_STACK_SIZE,
+        bleTask,
+        "BLE Task",
+        BLE_TASK_STACK_SIZE,
         NULL,
-        GUI_TASK_PRIORITY,
-        &guiTaskHandle,
+        BLE_TASK_PRIORITY,
+        &bleTaskHandle,
         0
     );
-    
+
 #if DEBUG_INIT == 1
     Serial.println("All FreeRTOS tasks created");
 #endif

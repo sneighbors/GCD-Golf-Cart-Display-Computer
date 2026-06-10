@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "types.h"
 
-// Filter indices — match objects.btn_filter cycle order and s_filterNames[] in chat_screen.cpp:
+// Filter indices — used by BLE CMD_REQ_CHAT and chatBufferSnapshot():
 //   0 = DM (direct messages)
 //   1 = ALL
 //   2 = CHANNEL 0

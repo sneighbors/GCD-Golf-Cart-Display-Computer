@@ -35,20 +35,9 @@
 #include "communication/espnow_handler.h"
 #include "communication/meshtastic_admin.h"
 
-
 // Tasks
 #include "tasks/tasks.h"
 #include "tasks/meshtastic_callback_task.h"
-
-// UI
-#include "ui_eez/ui.h"
-#include "ui_eez/actions.h"
-#include "ui/venue_event_display.h"
-#include "ui/espnow_display.h"
-#include "ui/tone_actions.h"
-#include "ui/chat_screen.h"
-#include "ui/canned_screen.h"
-#include "ui/settings2_screen.h"
 
 // Utils
 #include "utils/time_utils.h"
@@ -74,8 +63,6 @@ static void heapAllocFailedCallback(size_t size, uint32_t caps, const char *func
   #define HEAP_LOG(label) ((void)0)
 #endif
 
-
-void* glyph_guard = nullptr;  // Freed by gui_task before first render — see globals.h
 
 /*****************
  *     SETUP     *
@@ -108,15 +95,6 @@ void setup() {
     favoritesLoad();
     HEAP_LOG("after loadPreferences");
 
-    // Initialize display
-    initDisplay();
-
-    // Initialize backlight
-    initBacklight();
-
-    // Initialize display and touchscreen
-    initTouchscreen();
-
     // Initialize speaker
     initSpeaker();
 
@@ -130,16 +108,6 @@ void setup() {
     tone_startup();
     HEAP_LOG("after hw init");
 
-    // Initialize LVGL
-#if DEBUG_INIT == 1
-    Serial.printf("LVGL v%d.%d.%d\n", lv_version_major(), lv_version_minor(), lv_version_patch());
-#endif
-
-    // Clear screen to black immediately after LVGL init
-    lv_obj_t* default_screen = lv_scr_act();
-    lv_obj_set_style_bg_color(default_screen, lv_color_black(), LV_PART_MAIN);
-    lv_refr_now(NULL);  // Force immediate refresh
-
     // Initialize display strings
     cur_date = String("NO GPS");
     cur_temp = String("--");
@@ -148,36 +116,6 @@ void setup() {
     espnow_status = "Not initialized";
     espnow_last_received = "";
 
-    // Reserve a 26 KB block before creating any LVGL objects.
-    // With LV_STDLIB_CLIB, lv_malloc() is system malloc. The 14-screen ui_init()
-    // makes ~300 small allocations that fragment the heap; the 172px splash-screen
-    // glyph renderer then needs 24 KB contiguous and sometimes can't find it.
-    // This block is held through ALL of setup (mutexes, queues, task stacks, etc.)
-    // and freed by gui_task immediately before the first lv_timer_handler() call,
-    // so nothing else can fragment it between the free and the render.
-    glyph_guard = malloc(14000);
-    HEAP_LOG("after glyph_guard malloc(14000)");
-#if DEBUG_HEAP
-    Serial.printf("[HEAP] glyph_guard=%p\n", glyph_guard);
-#endif
-
-    // Initialize UI from EEZ Studio
-    ui_init();
-    HEAP_LOG("after ui_init");
-
-    // Initialize chat / messaging UI (mounts hand-coded LVGL into the
-    // EEZ-defined containers; must run AFTER ui_init() so the
-    // objects.* widgets exist).
-    chatScreenInit();
-    HEAP_LOG("after chatScreenInit");
-    chatScreenPreAllocRows();          // pre-alloc rows from clean boot heap
-    HEAP_LOG("after chatScreenPreAllocRows");
-    cannedScreenInit();
-    HEAP_LOG("after cannedScreenInit");
-    settings2ScreenInit();
-    HEAP_LOG("after settings2ScreenInit");
-
-    // glyph_guard is NOT freed here — gui_task frees it before the first lv_timer_handler().
     // Initialize Meshtastic
     mt_serial_init(MT_SERIAL_RX_PIN, MT_SERIAL_TX_PIN, MT_DEV_BAUD_RATE);
     randomSeed(micros());
@@ -196,7 +134,6 @@ void setup() {
     // Create synchronization objects
     gpsMutex = xSemaphoreCreateMutex();
     eepromMutex = xSemaphoreCreateMutex();
-    displayMutex = xSemaphoreCreateMutex();
     hotPacketMutex = xSemaphoreCreateMutex();  // Protects weather and venue/event data
     chatBufferMutex = xSemaphoreCreateMutex();  // Protects chat ring buffer
     eepromWriteQueue = xQueueCreate(10, sizeof(eepromWriteItem_t));
@@ -204,13 +141,15 @@ void setup() {
     espnowRecvQueue = xQueueCreate(ESPNOW_QUEUE_SIZE, sizeof(espnow_recv_item_t));
     gpsConfigCallbackQueue = xQueueCreate(2, sizeof(gpsConfigCallbackItem_t));
     chatTxQueue = xQueueCreate(8, sizeof(chatTxItem_t));
-    firstRenderDone = xSemaphoreCreateBinary();  // meshtastic_task: unblock after first render (~0.2s)
-    splashDone      = xSemaphoreCreateBinary();  // espnow_task: unblock after home screen loads (~3-4s)
+    bleNotifyQueue  = xQueueCreate(BLE_NOTIFY_QUEUE_SIZE, sizeof(ble_notify_item_t));
     HEAP_LOG("after mutex/queue create");
 
     // Restore unread DMs from previous GCI sleep cycle (no-op on first boot or non-GCI use).
-    // Must run after chatBufferMutex is created and after initSpeaker() so beeps work.
     loadDmsFromNvs();
+    if (pendingDmRestoreBeep) {
+        tone_message();
+        pendingDmRestoreBeep = false;
+    }
     HEAP_LOG("after loadDmsFromNvs");
 
     // Create all FreeRTOS tasks (including ESP-NOW)

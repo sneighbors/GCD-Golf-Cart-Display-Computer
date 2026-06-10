@@ -17,12 +17,6 @@ void espnowTask(void *parameter) {
     String saved_mac_addr = "";
     bool pairing_succeeded = false;
 
-    // Block until home screen has loaded (~3-4s). WiFi init (esp_wifi_start) fragments
-    // the heap below the 24KB draw-buffer threshold needed for the 172px splash glyph.
-    // Delaying until s_homeScreenLoaded ensures the glyph is never rendered after WiFi
-    // starts. 10-second timeout is a safety fallback; normal path is ~3-4s.
-    if (splashDone) xSemaphoreTake(splashDone, pdMS_TO_TICKS(10000));
-
     while (true) {
         // Check for peer timeouts
         if (espnow_enabled && espNow.isInitialized() && espnow_connected) {

@@ -6,37 +6,32 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <freertos/semphr.h>
-#include <XPT2046_Touchscreen.h>
 #include <NMEAGPS.h>
 #include <Timezone.h>
 #include <Preferences.h>
 #include <JC_Sunrise.h>
-#include <lvgl.h>
 #include "types.h"
 
 // FreeRTOS handles
 extern TaskHandle_t gpsTaskHandle;
-extern TaskHandle_t guiTaskHandle;
 extern TaskHandle_t meshtasticTaskHandle;
 extern TaskHandle_t meshtasticCallbackTaskHandle;
 extern TaskHandle_t eepromTaskHandle;
 extern TaskHandle_t systemTaskHandle;
 extern TaskHandle_t espnowTaskHandle;
+extern TaskHandle_t bleTaskHandle;
 
 // Synchronization objects
 extern SemaphoreHandle_t gpsMutex;
 extern SemaphoreHandle_t eepromMutex;
-extern SemaphoreHandle_t displayMutex;
 extern SemaphoreHandle_t hotPacketMutex;  // Protects hot packet buffer swapping (not data reads)
 extern SemaphoreHandle_t chatBufferMutex;  // Guards the chat ring buffer
-extern SemaphoreHandle_t firstRenderDone;  // Given by gui_task after first render; meshtastic_task takes once before calling mt_loop()
-extern SemaphoreHandle_t splashDone;       // Given by gui_task after home screen loads; espnow_task takes once before WiFi init
-extern void* glyph_guard;  // 26KB heap reservation freed by gui_task before first render (see main.cpp)
 extern QueueHandle_t eepromWriteQueue;
 extern QueueHandle_t meshtasticCallbackQueue;
 extern QueueHandle_t espnowRecvQueue;
 extern QueueHandle_t gpsConfigCallbackQueue;
 extern QueueHandle_t chatTxQueue;       // UI -> meshtasticTask send pipe
+extern QueueHandle_t bleNotifyQueue;    // ble_task outbound notification queue
 
 // Double buffering for hot packet data (eliminates blocking reads)
 // Parser writes to back buffer, swaps atomically, GUI reads from front buffer
@@ -66,20 +61,6 @@ extern char hotPacketBuffer_fcast_temp4[2][HP_FCAST_TEMP_SIZE];
 extern char hotPacketBuffer_fcast_precip4[2][HP_FCAST_PRECIP_SIZE];
 extern char hotPacketBuffer_np_rcv_time[2][HP_RCV_TIME_SIZE];
 extern char hotPacketBuffer_live_venue_event_data[2][HP_VENUE_DATA_SIZE];
-
-// Display objects
-extern SPIClass touchscreenSpi;
-extern XPT2046_Touchscreen touchscreen;
-extern uint16_t touchScreenMinimumX, touchScreenMaximumX, touchScreenMinimumY, touchScreenMaximumY;
-extern lv_indev_t *indev;
-extern uint8_t *draw_buf;
-extern uint32_t lastTick;
-
-// Touchscreen calibration coefficients (loaded from EEPROM if available)
-// If not available, falls back to existing auto-calibration using map() function
-extern float touch_alpha_x, touch_beta_x, touch_delta_x;
-extern float touch_alpha_y, touch_beta_y, touch_delta_y;
-extern bool use_touch_calibration;  // true if calibration coefficients loaded from EEPROM
 
 // GPS objects
 extern HardwareSerial &gpsSerial;
